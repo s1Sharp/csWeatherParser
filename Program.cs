@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-//
 
 //using Newtonsoft.Json;
 using System.IO;
@@ -10,7 +9,7 @@ using System.Xml;
 using Newtonsoft.Json;
 
 namespace TestSolve
-{ 
+{
     class Program
     {
         //init dict for ParceMode, whose we input at start program
@@ -49,14 +48,14 @@ namespace TestSolve
         static string PathToWrite = @"E:\Test\"; //change path to save directory
 
         static void Main(string[] args)
-        {   
+        {
             //main input Town Name
             Console.Write("Input here town name: ");
             inTownName = Console.ReadLine();
             //choose parse mode
             Console.Write("\nChoose selection mode \n\t1 - for XML parse\n\t2 - for JSON parse: ");
             ParceMode = Console.ReadLine();
-            if (ParceMode==null)
+            if (ParceMode == null)
             {
                 Console.Write("Wrong input, set default parse mode: XML");
                 ParceMode = "1";
@@ -67,7 +66,7 @@ namespace TestSolve
                 Connect();
                 Console.WriteLine("\nSuccess request!");
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Console.WriteLine("Error: " + ex.Message + "\n Try againg");
             }
@@ -95,7 +94,7 @@ namespace TestSolve
                             SelectedNodeText(doc.DocumentElement, current.Value, LenOfStr, LenOfStr, current.Key);
                         }
                         //================= any data conversions ===============
-                        data["temp"] = GetCelciusValue(data["temp"], temp.kel)+" C";
+                        data["temp"] = GetCelciusValue(data["temp"], temp.kel) + " C";
                         data["humidity"] = data["humidity"] + " %";
                         //console and file output
                         WriteToFile();
@@ -107,16 +106,16 @@ namespace TestSolve
                         dynamic jsondata = JsonConvert.DeserializeObject(answer);
 
                         //================= any data conversions ===============
-                        data["temp"]= jsondata.main.temp;
-                        data["temp"] = GetCelciusValue(data["temp"],temp.kel) + " C";
-                        data["humidity"] = jsondata.main.humidity; 
+                        data["temp"] = jsondata.main.temp;
+                        data["temp"] = GetCelciusValue(data["temp"], temp.kel) + " C";
+                        data["humidity"] = jsondata.main.humidity;
                         data["humidity"] = data["humidity"] + " %";
                         data["sunrise"] = jsondata.sys.sunrise;
                         DateTime ss = ParseUnixTimestamp(data["sunrise"]);
                         data["sunrise"] = ss.ToString("dd.MM.yyyy") + " : " + ss.ToString("HH.mm.ss");
                         data["sunset"] = jsondata.sys.sunset;
                         DateTime st = ParseUnixTimestamp(data["sunset"]);
-                        data["sunset"] = st.ToString("dd.MM.yyyy") + " : " + st.ToString("HH.mm.ss"); 
+                        data["sunset"] = st.ToString("dd.MM.yyyy") + " : " + st.ToString("HH.mm.ss");
                         //console and file output
                         WriteToFile();
                         break;
@@ -141,7 +140,8 @@ namespace TestSolve
             {
                 //set filename as current datatime 
                 DateTime now = DateTime.Now;
-                fstream = new FileStream(PathToWrite + now.ToString("dd.MM.yyyy") +"_"+ now.ToString("HH.mm.ss") + ".txt", FileMode.OpenOrCreate);
+                string savepath = (PathToWrite + now.ToString("dd.MM.yyyy") + "_" + now.ToString("HH.mm.ss") + ".txt");
+                fstream = new FileStream(savepath, FileMode.OpenOrCreate);
                 StreamWriter w = new StreamWriter(fstream);
                 foreach (var current in data)
                 {
@@ -149,6 +149,7 @@ namespace TestSolve
                     Console.Write(current.Key + " : " + current.Value + "\n");
                     w.Write(current.Key + " : " + current.Value + "\n");
                 }
+                Console.WriteLine("\nFile saved in:\n" + savepath);
                 w.Close();
             }
             catch (Exception ex)
@@ -156,30 +157,30 @@ namespace TestSolve
                 Console.WriteLine("Error: " + ex.Message + "\n Try againg");
             }
             finally
-            { 
+            {
                 if (fstream != null)
                     fstream.Close();
             }
 
-           
+
         }
 
-    
-    public static void SelectedNodeText(XmlNode x, string xp, int depth, int num, string key)
+
+        public static void SelectedNodeText(XmlNode x, string xp, int depth, int num, string key)
         {
             //func to search node value 
             foreach (XmlNode i in x)
             {
                 string v = String.Empty, s = String.Empty, r = String.Empty;
-                foreach (XmlAttribute attr in i.Attributes) 
-                { 
+                foreach (XmlAttribute attr in i.Attributes)
+                {
                     if (i.Attributes.GetNamedItem("value") != null)
                         v = i.Attributes["value"].Value;
                     if (i.Attributes.GetNamedItem("set") != null)
                         s = i.Attributes["set"].Value;
                     if (i.Attributes.GetNamedItem("rise") != null)
                         r = i.Attributes["rise"].Value;
-                }   
+                }
                 //here we search for path needed child
                 if (i.Name == xp.Split('/')[depth - num])
                 {
@@ -200,7 +201,7 @@ namespace TestSolve
                                 }
                             case "sunset":
                                 {
-                                    data[key] = Convert.ToString(s).Replace("T"," : ");
+                                    data[key] = Convert.ToString(s).Replace("T", " : ");
                                     break;
                                 }
                             case "sunrise":
@@ -226,13 +227,13 @@ namespace TestSolve
         //=================some convert and data conversions funct ===============
         enum temp
         {
-            kel,far
+            kel, far
         }
         static private string GetCelciusValue(double fahrenheitValue)
         {
             return Convert.ToString((fahrenheitValue - 32) * 5 / 9);
         }
-        static private string GetCelciusValue(string fahrenheitValue,temp key)
+        static private string GetCelciusValue(string fahrenheitValue, temp key)
         {
             switch (key)
             {
@@ -244,7 +245,7 @@ namespace TestSolve
                 case temp.far:
                     {
                         double l = Convert.ToDouble(fahrenheitValue.Replace(".", ","));
-                        return Convert.ToString(Math.Round(((l-32)*5/9),2,MidpointRounding.AwayFromZero));
+                        return Convert.ToString(Math.Round(((l - 32) * 5 / 9), 2, MidpointRounding.AwayFromZero));
                     }
                 default:
                     throw new Exception("Invalid key");
