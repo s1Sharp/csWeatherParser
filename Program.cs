@@ -13,14 +13,14 @@ namespace TestSolve
 { 
     class Program
     {
-
+        //init dict for ParceMode, whose we input at start program
         static Dictionary<string, string> ParceModeDict = new Dictionary<string, string>
         {
             {"1", "xml"},
             {"2", "json"},
             {"",  "json" }
         };
-
+        //init dict for parceXML stream, this dict have main path to atributes all child
         static Dictionary<string, string> PathForXML = new Dictionary<string, string>
         {
             {"temp", "temperature"},
@@ -28,7 +28,7 @@ namespace TestSolve
             {"sunrise", "city/sun"},
             {"sunset", "city/sun"},
         };
-
+        //init answer dict for collect data to show and write in file
         static Dictionary<string, string> data = new Dictionary<string, string>
         {
             {"temp", ""},
@@ -36,27 +36,34 @@ namespace TestSolve
             {"sunrise", ""},
             {"sunset", ""},
         };
+        //init out APIKEY
+        const string API_KEY = "5718d8292e6a519de25c7c22b8a64939";
+        const string HTTPLINK = @"https://api.openweathermap.org/data/2.5/weather?q=";
+
         static XmlDocument doc = null;
         static string ParceMode = null;
-        const string API_KEY = "5718d8292e6a519de25c7c22b8a64939";
         static string inTownName;
         static string answer;
+
+        //init Path to write files
         static string PathToWrite = @"E:\Test\"; //change path to save directory
 
         static void Main(string[] args)
         {   
-
+            //main input Town Name
             Console.Write("Input here town name: ");
             inTownName = Console.ReadLine();
-            Console.Write("\nChose selection mode \n\t1 - for XML parce\n\t2 - for JSON parce: ");
+            //choose parse mode
+            Console.Write("\nChoose selection mode \n\t1 - for XML parse\n\t2 - for JSON parse: ");
             ParceMode = Console.ReadLine();
             if (ParceMode==null)
             {
-                Console.Write("Wrong input, set default parce mode: XML");
+                Console.Write("Wrong input, set default parse mode: XML");
                 ParceMode = "1";
             }
             try
             {
+                //main logic func
                 Connect();
                 Console.WriteLine("\nSuccess request!");
             }
@@ -68,14 +75,12 @@ namespace TestSolve
 
         public static void Connect()
         {
-                //api.openweathermap.org/data/2.5/weather?q={city name}&appid={API key}
-                //api.openweathermap.org/data/2.5/weather?q={ city name}&appid={ API key}
-            WebRequest request = WebRequest.Create("https://api.openweathermap.org/data/2.5/weather?q=" + inTownName + "&APPID=" + API_KEY + "&mode=" + ParceModeDict[ParceMode]);
-            request.Method = "POST";
+            //api.openweathermap.org/data/2.5/weather?q={city name}&appid={API key} - example api request
+            WebRequest request = WebRequest.Create(HTTPLINK + inTownName + "&APPID=" + API_KEY + "&mode=" + ParceModeDict[ParceMode]);
+            request.Method = "POST"; //metod get data
             WebResponse response = request.GetResponse();
             StreamReader reader = new StreamReader(response.GetResponseStream());
-
-            
+            //set parce mode
             switch (ParceModeDict[ParceMode])
             {
                 case "xml":
@@ -86,10 +91,13 @@ namespace TestSolve
                         foreach (var current in PathForXML)
                         {
                             int LenOfStr = current.Value.Split('/').Length;
+                            //func to select xml node tree child and his attributes values into data dict
                             SelectedNodeText(doc.DocumentElement, current.Value, LenOfStr, LenOfStr, current.Key);
                         }
+                        //================= any data conversions ===============
                         data["temp"] = GetCelciusValue(data["temp"], temp.kel)+" C";
                         data["humidity"] = data["humidity"] + " %";
+                        //console and file output
                         WriteToFile();
                         break;
                     }
@@ -97,6 +105,8 @@ namespace TestSolve
                     {
                         answer = reader.ReadToEnd();
                         dynamic jsondata = JsonConvert.DeserializeObject(answer);
+
+                        //================= any data conversions ===============
                         data["temp"]= jsondata.main.temp;
                         data["temp"] = GetCelciusValue(data["temp"],temp.kel) + " C";
                         data["humidity"] = jsondata.main.humidity; 
@@ -104,11 +114,10 @@ namespace TestSolve
                         data["sunrise"] = jsondata.sys.sunrise;
                         DateTime ss = ParseUnixTimestamp(data["sunrise"]);
                         data["sunrise"] = ss.ToString("dd.MM.yyyy") + " : " + ss.ToString("HH.mm.ss");
-
                         data["sunset"] = jsondata.sys.sunset;
                         DateTime st = ParseUnixTimestamp(data["sunset"]);
                         data["sunset"] = st.ToString("dd.MM.yyyy") + " : " + st.ToString("HH.mm.ss"); 
-
+                        //console and file output
                         WriteToFile();
                         break;
                     }
@@ -130,11 +139,13 @@ namespace TestSolve
             FileStream fstream = null;
             try
             {
+                //set filename as current datatime 
                 DateTime now = DateTime.Now;
                 fstream = new FileStream(PathToWrite + now.ToString("dd.MM.yyyy") +"_"+ now.ToString("HH.mm.ss") + ".txt", FileMode.OpenOrCreate);
                 StreamWriter w = new StreamWriter(fstream);
                 foreach (var current in data)
                 {
+                    //console and file output here
                     Console.Write(current.Key + " : " + current.Value + "\n");
                     w.Write(current.Key + " : " + current.Value + "\n");
                 }
@@ -169,11 +180,12 @@ namespace TestSolve
                     if (i.Attributes.GetNamedItem("rise") != null)
                         r = i.Attributes["rise"].Value;
                 }   
-
+                //here we search for path needed child
                 if (i.Name == xp.Split('/')[depth - num])
                 {
                     if (num == 1)
                     {
+                        //get child attribute into data dict
                         switch (key)
                         {
                             case "temp":
@@ -211,7 +223,7 @@ namespace TestSolve
             return;
         }
 
-
+        //=================some convert and data conversions funct ===============
         enum temp
         {
             kel,far
@@ -247,6 +259,4 @@ namespace TestSolve
             return (new DateTime(1970, 1, 1)).AddSeconds(Convert.ToDouble(timestamp)).ToLocalTime();
         }
     }
-    
-
 }
